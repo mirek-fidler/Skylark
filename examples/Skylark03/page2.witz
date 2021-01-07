@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html>
+<body>
+<a href=$HomePage()>Back to index</a><br>
+</body>
+</html>

@@ -1,0 +1,13 @@
+description "SKYLARK handlers and path patterns\377";
+
+uses
+	Core,
+	Skylark;
+
+file
+	favicon.png,
+	main.cpp;
+
+mainconfig
+	"" = "MT";
+
