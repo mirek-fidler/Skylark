@@ -12,9 +12,13 @@ extern IniBool skylark_log;
 String GetThreadName();
 
 #define SKYLARKLOG(x) LOG_(Ini::skylark_log, GetThreadName() << ' ' << x)
+#define MARK_SESSION_VAR(x) SESSION_MARKER + Upp::String(x)
 
 class Renderer;
 class Http;
+
+constexpr const char* SESSION_MARKER = ".";
+constexpr const char* IDENTITY = "__identity__";
 
 struct SkylarkSessionConfig {
 	String cookie;
