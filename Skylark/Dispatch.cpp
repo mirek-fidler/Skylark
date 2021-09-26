@@ -519,7 +519,7 @@ void Http::Finalize(bool closeSocket)
         r << "\r\n";
         rsocket->PutAll(r);
         if(responseStream){
-            Upp::String fileData = "";
+            String fileData;
 			while((fileData = responseStream.Get(chunkSize)).GetCount() > 0){
 				rsocket->PutAll(fileData);
 				fileData = "";
