@@ -522,7 +522,7 @@ void Http::Finalize(bool closeSocket)
             String fileData;
 			while((fileData = responseStream.Get(chunkSize)).GetCount() > 0){
 				rsocket->PutAll(fileData);
-				fileData = "";
+				fileData.Clear();
 			}
 			rsocket->PutAll("\r\n");
 			responseStream.Close();
