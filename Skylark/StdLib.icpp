@@ -30,7 +30,7 @@ String GetIdentity(const Renderer *r)
 	
 	//New
 	for(const Upp::String& key : http->var.GetKeys()){
-		if(key.Find(IDENTITY) != -1){
+		if(key.Find(IDENTITY) >= 0){
 			return http->var.Get(key).ToString();
 		}
 	}
