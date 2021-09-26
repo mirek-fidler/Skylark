@@ -23,7 +23,7 @@ protected:
 	const One<Exe>& GetTemplate(const char *template_name);
 	friend String GetIdentity(const Renderer *r);
 
-public:	
+public:
 	Renderer& operator()(const char *id, const char *v)   { var.GetAdd(id) = v; return *this; }
 	Renderer& operator()(const char *id, const String& v) { var.GetAdd(id) = v; return *this; }
 	Renderer& operator()(const char *id, const Value& v)  { var.GetAdd(id) = v; return *this; }
@@ -75,6 +75,10 @@ class Http : public Renderer {
 	int    code;
 	String code_text;
 	String response;
+	
+	FileIn responseStream;
+	int chunkSize;
+	
 	String content_type;
 	String request_content_type;
 	
@@ -132,7 +136,9 @@ public:
 	Http&  ContentType(const char *s)                  { content_type = s; return *this; }
 
 	Http&  Content(const char *s, const Value& data);
+	Http&  SendFile(const Upp::String& filePath, int _chunkSize = 20000);
 	Http&  operator<<(const Value& s);
+	
 
 	Http&  SetRawCookie(const char *id, const String& value,
 	                    Time expires = Null, const char *path = NULL,
@@ -167,7 +173,7 @@ public:
 	
 	String GetResponse() const                        { return response; }
 	
-	void   Finalize();
+	void   Finalize(bool closeSocket = true);
 
 	void   Dispatch(TcpSocket& socket);
 	
