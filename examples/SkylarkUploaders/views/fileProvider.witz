@@ -1,0 +1,168 @@
+#include base
+
+#define ISVALIDE
+
+#define CONTENT
+<script src="ressources/sha256.js"></script>
+<script src="ressources/fileProvider.js"></script>
+<div style="text-align: center"><h2>Welcome <B>$.USERNAME</B></h2></div>
+<input value="$.USERNAME" id="login" hidden>
+$js_identity()
+$js_identity()
+$js_identity()
+<div class="row">
+	<div class="col-md-10"> 
+$if(.RIGHT > 0)
+		<div class="form-inline">
+			<div class="form-group mb-2">
+				<label for="adduser"  >Add new user :</label>
+			</div>
+			<div class="form-group mb-2">
+				<input type="text" class="form-control" placeholder="Username" id="lo" required>
+			</div>
+			<div class="form-group mb-2">
+				<input type="password" class="form-control" placeholder="Enter Password" id="pa" required>
+			</div>
+			<div class="form-group mb-2">
+				<button onClick='AddUser($AddUser)' class="form-control btn btn-success"><span class="glyphicon glyphicon-user"></span> Add User </button>
+			</div>
+			<div class="form-group mb-4">
+				<div class="row">
+					<div class="col-md-6">
+						<div class="loader form-control" id="loader" style="display: none;" >Loading...</div>
+					</div>
+					<div class="col-md-6">
+						<div id="result" style="display: none;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+$endif
+	</div>
+	<div class="col-md-2" >
+		<a href=$LogOff class="btn btn-danger"><span class="glyphicon glyphicon-log-out"></span> Log off </a>	
+	</div>
+</div>
+<br>
+<div class="row">
+	<div class="col-md-12"> 
+		<div class="form-inline">
+			<div class="form-group mb-2">
+				<label for="adduser"  >Change your password :</label>
+			</div>
+			<div class="form-group mb-1">
+				<input type="password" class="form-control" placeholder="Enter old Password" id="olpa" required>
+			</div>
+			<div class="form-group mb-1">
+				<input type="password" class="form-control" placeholder="Enter new Password" id="pa2" required>
+			</div>
+			<div class="form-group mb-1">
+				<input type="password" class="form-control" placeholder="Re enter new Password" id="repa" required>
+			</div>
+			<div class="form-group mb-2">
+				<button onClick='ChangePass($UpdPass)' class="form-control btn btn-success"><span class="glyphicon glyphicon-refresh"></span> Update </button>
+			</div>
+			<div class="form-group mb-4">
+				<div class="row">
+					<div class="col-md-6">
+						<div class="loader form-control" id="loader2" style="display: none;" >Loading...</div>
+					</div>
+					<div class="col-md-6">
+						<div id="result2" style="display: none;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<br>
+<div class="row">
+    <div class="large-12 columns">
+        <p class="lead">Select files to upload</p>
+        <button class="inverse small" id="browseButton">+ Add Files</button>
+        <button class="danger small" id="uploadFiles">Start Upload</button>
+        <div class="alert-box alert" data-nothingToUpload>Error Nothing To Upload, Please Add Some Files</div>
+        <div id="dragHere" class="panel drop-zone">Drag &amp; Drop Here</div>
+        <div id="results" class="panel"></div>Status:
+        <div class="alert-box secondary"></div>
+    </div>
+</div>
+<br>
+<div id='FormGenerateURL' class='hide'>
+	<h3> Generate link :</h3>
+    <form action='/generateURL' method='get'>
+        <label for='name'>Total Download allowed (-2 = infinite):</label>
+        <input type='number' name='totalDownload' value='1' class='TotalD form-control input-md'>
+		<input type='number' name='idfile' class='FileID' value='5'  hidden>        
+		<input type='submit' class='btn btn-primary' style='margin-left:auto;margin-right:auto;display:block;margin-top:2%;margin-bottom:0%'>
+    </form>
+</div>
+<div class="row">
+	<div class="col-md-12"> 
+		<table class="table">
+			<thead>
+				<tr>
+			      <th scope="No">#</th>
+			      <th scope="FileName">Name</th>
+			      <th scope="FileSize">Size</th>
+			      <th scope="Owner">Owner</th>
+			    </tr>
+			</thead>
+			<tbody>
+				$for(file in FILES)
+					<tr>
+						<th scope="row">$file._index</th>
+						<td>$file.FileName</td>
+						<td>$file.FileSize Mo</td>
+						<td>$file.FileOwnerName</td>
+						<td></td>
+						$if(.USERNAME == file.FileOwnerName)
+							<td><a href="/delete/$file.FileID"><span class="glyphicon glyphicon-remove"></span></a></td>
+						$else
+							<td><div class="dummy" hidden></div></td>
+						$endif
+						<td><a href="/download/$file.FileID"  ><span class="glyphicon glyphicon-download-alt"></span></a></td>
+						<td><a class="generateURL" id="$file.FileID"><span class="glyphicon glyphicon-link"></span></a></td>
+					</tr>
+					$if(file.GOTURL > 0)
+							<thead>
+								<tr>
+							      <th scope="No"></th>
+							      <th scope="1">Author</th>
+							      <th scope="2">Max downloads available</th>
+							      <th scope="3">Number of downloads</th>
+							      <th scope="4">Link</th>
+							    </tr>
+							</thead>
+						$for(OneURL in file.AllURL)
+							<tr>
+								<div id="collapseTwo" class="collapse in">
+									<td></td>
+									<td>$OneURL.OWNER</td>
+									<td>$OneURL.TotalDownload</td>
+									<td>$OneURL.DownloadNumber</td>
+									<td><a class="refreshDownload" href="$OneURL.Url">$OneURL.Url</a></td>
+									<td><a href="/deleteURL/$OneURL.id"><span class="glyphicon glyphicon-remove"></span></a></td>
+								</div>
+							</tr>
+						$endfor
+					$endif
+				$endfor
+			</tbody>
+
+			<script type="text/javascript">			
+				var urls = document.getElementsByClassName("refreshDownload");
+				for (var i = 0; i < urls.length; i++) {
+					urls.item(i).innerHTML = siteURL  + urls.item(i).innerHTML
+				}
+			</script>
+
+
+		</table>
+		<br>
+		<br>
+		<br>
+		<br>
+	</div>
+</div>
+<script src="ressources/uploadJS.js"></script>

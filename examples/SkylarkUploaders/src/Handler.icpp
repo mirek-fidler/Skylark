@@ -1,0 +1,512 @@
+#include "Uploaders.h"
+#include <RichText/RichText.h>
+using namespace Upp;
+
+Uploaders& GetApp(){return (Uploaders&)SkylarkApp::TheApp();}
+Upp::String GetFilePath(const Upp::String& ressource);
+int RemoveBaliseByClass(const Upp::String& classBaliseToRemove, Upp::String& codeHtml);
+Upp::String QtfToHTML(const Upp::String& filePath);
+Upp::String GetNameOfFile(Value& file);
+int ProgressHandler(int reason, Http &http, int size);
+int StringToInt(const Upp::String& str);
+
+void Auth(Http&);
+void Auth2(Http&);
+void PrivateScreen(Http&);
+void PostUpload(Http&);
+void DownloadURL(Http&);
+
+SKYLARK(CatchAll, "**")
+{
+	Upp::String path = "";
+	int i = 0;
+	while(!http[i].IsEmpty()){
+		path << http[i] << "/";
+		i++;
+	}
+	http("FILEREQUIRED",path )("ERROR_CODE",404)("ERROR_STRING", "File not found.").RenderResult("../views/notFound").Response(404,"File not found");
+}
+SKYLARK(HomePage,"")
+{
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		http.Redirect(PrivateScreen);
+	}else{
+		http.RenderResult("../views/authentification");
+	}
+}
+SKYLARK(Auth,"/secret")
+{
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		http.Redirect(PrivateScreen);
+	}else{
+		http.RenderResult("../views/authentification");
+	}
+}
+SKYLARK(Auth2,"/auth:POST")
+{
+	if(GetApp().bddLoaded){
+		User* us = GetApp().IsValideUser((String)http["login"],(String)http["password"]);
+		if(us){
+			http.NewIdentity();
+			http.SessionSet("RIGHT", AsString(us->GetRight()));
+			http.SessionSet("USERNAME", us->GetLogin());
+			http.Redirect(PrivateScreen);
+		}else{
+			http.Redirect(Auth);
+		}
+	}
+}
+
+SKYLARK(LogOff,"/logOff"){
+	http.ClearSession();
+	http.Redirect(Auth);
+}
+
+SKYLARK(AddUser, "adduser:POST"){
+	if(!http[".USERNAME"].ToString().IsEmpty() && !http[".RIGHT"].ToString().IsEmpty()){
+		String login = (String)http["login"];
+		String password = (String)http["pass"];
+		if(GetApp().bddLoaded){
+			Upp::String alert;
+			if(GetApp().CreateUser(login,password,alert)){
+				http.UxRun(R"({"result":1,"alert":")" + alert + "\"}");
+			}else{
+				http.UxRun(R"({"result":0,"alert":")" + alert + "\"}");
+			}
+		}else{
+			http.UxRun(R"({"result":0,"alert":"Database is not setup on the server !"})");
+		}
+	}else{
+		http.Response(403,"You must be logged");
+	}
+}
+
+SKYLARK(UpdPass, "updPass:POST"){
+	if(!http[".USERNAME"].ToString().IsEmpty()){
+		String login = (String)http[".USERNAME"];
+		String oldPass = (String)http["oldpass"];
+		String newPass = (String)http["newpass"];
+		if(GetApp().bddLoaded){
+			Upp::String alert;
+			User* us = GetApp().IsValideUser(login,oldPass);
+			if(us){
+				if(GetApp().UpdatePassword(us->GetId(),newPass,alert)){
+					http.UxRun(R"({"result":1,"alert":")" + alert + "\"}");
+				}else{
+					http.UxRun(R"({"result":0,"alert":")" + alert + "\"}");
+				}
+			}else{
+				http.UxRun(R"({"result":0,"alert":"Old Password is invalide !"})");
+			}
+		}else{
+			http.UxRun(R"({"result":0,"alert":"Database is not setup on the server !"})");
+		}
+	}else{
+		http.Response(403,"You must be logged");
+	}
+}
+
+SKYLARK(PrivateScreen,"/fileProvider"){
+	if(!http[".USERNAME"].ToString().IsEmpty()){
+		ValueMap vm;
+		for(File& f : GetApp().AllFiles){
+			ValueMap vm2;
+			vm2.Add("FileName",f.FileName);
+			vm2.Add("FilePath",f.FilePath);
+			vm2.Add("FileSize",f.FileSize / 1000000);
+			vm2.Add("FileOwnerName",f.owner->GetLogin());
+			vm2.Add("FileID",f.id);
+			ValueMap vm3;
+			int cpt =0;
+			int cptFileValide = 0;
+			for(FileURL& furl : GetApp().AllURL){
+				if(furl.file && furl.file->id == f.id){
+					ValueMap vm4;
+					vm4.Add("OWNER", furl.user->GetLogin());
+					vm4.Add("id", furl.Id);
+					vm4.Add("TotalDownload", (furl.TotalDownloadNumber == -2)? "∞":AsString(furl.TotalDownloadNumber) );
+					vm4.Add("DownloadNumber", furl.DownloadNumber);
+					vm4.Add("Url", "/url/"+ furl.URL);
+					vm3.Add(AsString(cpt),vm4);
+					cptFileValide++;
+				}
+				cpt++;
+			}
+			if(cptFileValide > 0)vm2.Add("GOTURL",cptFileValide);
+			vm2.Add("AllURL",vm3);
+			vm.Add(f.FileName,vm2);
+		}
+		http("FILES",vm).RenderResult("../views/fileProvider");
+	}else{
+		http.ClearSession();
+		http.Redirect(Auth);
+	}
+}
+
+SKYLARK(Delete,"/delete/**"){
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		if( http.GetParamCount() > 0){
+			int id = StringToInt(http[0]);
+			if( id != -1){
+				File* f = GetApp().FindFileByID(id);
+				if(f){
+					if(FileExists(f->FilePath)){
+						if(f->owner->GetLogin().IsEqual(http[".USERNAME"].ToString())){
+							GetApp().RemoveDocument(f->id);
+							http.Redirect(PrivateScreen);
+						}else{
+							http("FILEREQUIRED","delete/" + AsString(id) )("ERROR_CODE",401)("ERROR_STRING", "You are not allowed to do this.").RenderResult("../views/notFound").Response(401,"not allowed.");
+						}
+					}else{
+						http("FILEREQUIRED","delete/" + AsString(id) )("ERROR_CODE",204)("ERROR_STRING", "File no longer exist on server.").RenderResult("../views/notFound").Response(204,"File no longer exist");
+					}
+				}else{
+					http("FILEREQUIRED","delete/" + AsString(id) )("ERROR_CODE",404)("ERROR_STRING", "File not found.").RenderResult("../views/notFound").Response(404,"File not found");
+				}
+			}else{
+				http("FILEREQUIRED","delete/?" )("ERROR_CODE",400)("ERROR_STRING", "Bad request. Unknow args.").RenderResult("../views/notFound").Response(400,"Bad request. Unknow args");
+			}
+		}else{
+			http("FILEREQUIRED","delete" )("ERROR_CODE",400)("ERROR_STRING", "Bad request, no argument passed.").RenderResult("../views/notFound").Response(400,"Bad request, no argument passed");
+		}
+	}else{
+		http("FILEREQUIRED","delete/?" )("ERROR_CODE",403)("ERROR_STRING", "Authentication required.").RenderResult("../views/notFound").Response(403,"Authentication required");
+	}
+}
+
+SKYLARK(DeleteURL,"/deleteURL/**"){
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		if( http.GetParamCount() > 0){
+			int id = StringToInt(http[0]);
+			if( id != -1){
+				FileURL* f = GetApp().FindFileURLByID(id);
+				if(f && f->user){
+					if(f->user->GetLogin().IsEqual(http[".USERNAME"].ToString())){
+						GetApp().RemoveURL(f->Id);
+						http.Redirect(PrivateScreen);
+					}else{
+						http("FILEREQUIRED","deleteURL/" + AsString(id) )("ERROR_CODE",401)("ERROR_STRING", "You are not allowed to do this.").RenderResult("../views/notFound").Response(401,"not allowed.");
+					}
+				}else{
+					http("FILEREQUIRED","deleteURL/" + AsString(id) )("ERROR_CODE",404)("ERROR_STRING", "File not found.").RenderResult("../views/notFound").Response(404,"File not found");
+				}
+			}else{
+				http("FILEREQUIRED","deleteURL/?" )("ERROR_CODE",400)("ERROR_STRING", "Bad request. Unknow args.").RenderResult("../views/notFound").Response(400,"Bad request. Unknow args");
+			}
+		}else{
+			http("FILEREQUIRED","deleteURL" )("ERROR_CODE",400)("ERROR_STRING", "Bad request, no argument passed.").RenderResult("../views/notFound").Response(400,"Bad request, no argument passed");
+		}
+	}else{
+		http("FILEREQUIRED","deleteURL/?" )("ERROR_CODE",403)("ERROR_STRING", "Authentication required.").RenderResult("../views/notFound").Response(403,"Authentication required");
+	}
+}
+
+SKYLARK(Download,"/download/**"){
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		if( http.GetParamCount() > 0){
+			int id = StringToInt(http[0]);
+			if( id != -1){
+				File* f = GetApp().FindFileByID(id);
+				if(f){
+					if(FileExists(f->FilePath)){
+						http.SetHeader("content-disposition", "attachment; filename=\"" + f->FileName +"\"").ContentType("application/octet-stream") <<  LoadFile(f->FilePath);
+					}else{
+						http("FILEREQUIRED","download/" + AsString(id) )("ERROR_CODE",204)("ERROR_STRING", "File no longer exist on server.").RenderResult("../views/notFound").Response(204,"File no longer exist");
+					}
+				}else{
+					http("FILEREQUIRED","download/" + AsString(id) )("ERROR_CODE",404)("ERROR_STRING", "File not found.").RenderResult("../views/notFound").Response(404,"File not found");
+				}
+			}else{
+				http("FILEREQUIRED","download/?" )("ERROR_CODE",400)("ERROR_STRING", "Bad request. Unknow args.").RenderResult("../views/notFound").Response(400,"Bad request. Unknow args");
+			}
+		}else{
+			http("FILEREQUIRED","download" )("ERROR_CODE",400)("ERROR_STRING", "Bad request, no argument passed.").RenderResult("../views/notFound").Response(400,"Bad request, no argument passed");
+		}
+	}else{
+		http("FILEREQUIRED","download/?" )("ERROR_CODE",403)("ERROR_STRING", "Authentication required.").RenderResult("../views/notFound").Response(403,"Authentication required");
+	}
+}
+
+SKYLARK(DownloadURL,"/url/**"){
+	if( http.GetParamCount() > 0){
+		bool find = false;
+		for(FileURL& fu : GetApp().AllURL){
+			Upp::String url = (String)http[0];
+			if(fu.URL.IsEqual(url)){
+				find = true;
+				if(fu.file){
+					if(FileExists(fu.file->FilePath)){
+						fu.DownloadNumber++;
+						Upp::String fileData =  LoadFile(fu.file->FilePath);
+						http.SetHeader("content-disposition", "attachment; filename=\"" + fu.file->FileName +"\"").ContentType("application/octet-stream") << fileData;
+						if(fu.TotalDownloadNumber != -2 && fu.TotalDownloadNumber <= fu.DownloadNumber)
+							GetApp().RemoveURL(fu.Id);
+						return;
+					}else{
+						http("FILEREQUIRED","url/")("ERROR_CODE",204)("ERROR_STRING", "File no longer exist on server.").RenderResult("../views/notFound").Response(204,"File no longer exist");
+					}
+				}else{
+					http("FILEREQUIRED","url/")("ERROR_CODE",204)("ERROR_STRING", "File no longer exist on server.").RenderResult("../views/notFound").Response(204,"File no longer exist");
+				}
+				break;
+			}
+		}
+		if(!find){
+			http("FILEREQUIRED","url/")("ERROR_CODE",404)("ERROR_STRING", "Bad URL requested.").RenderResult("../views/notFound").Response(404,"Bad URL requested");
+		}else{
+			http("FILEREQUIRED","url/")("ERROR_CODE",400)("ERROR_STRING", "Something went wrong.").RenderResult("../views/notFound").Response(400,"Something went wrong");
+		}
+	}else{
+		http("FILEREQUIRED","url" )("ERROR_CODE",400)("ERROR_STRING", "Bad request, no argument passed.").RenderResult("../views/notFound").Response(400,"Bad request, no argument passed");
+	}
+}
+
+
+SKYLARK(CreateURL,"/generateURL"){
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		if( !http["totalDownload"].IsNull() && !http["idfile"].IsNull()){
+			int id = StringToInt(http["idfile"]);
+			int NumberOfDownload = StringToInt(http["totalDownload"]);
+			if(id != -1 && NumberOfDownload != -1){
+				if(GetApp().GenerateURL(id,http[".USERNAME"].ToString(),NumberOfDownload)){
+					http.Redirect(PrivateScreen);
+				}
+				else{
+					http("FILEREQUIRED","generatURL/?")("ERROR_CODE",204)("ERROR_STRING", "Error during creation of URL.").RenderResult("../views/notFound").Response(204,"Error during creation of URL");
+				}
+			}else{
+				http("FILEREQUIRED","generatURL/?" )("ERROR_CODE",400)("ERROR_STRING", "Bad request. Unknow args.").RenderResult("../views/notFound").Response(400,"Bad request. Unknow args");
+			}
+		}else{
+			http("FILEREQUIRED","generatURL/?" )("ERROR_CODE",400)("ERROR_STRING", "Bad request, no argument passed.").RenderResult("../views/notFound").Response(400,"Bad request, no argument passed");
+		}
+	}else{
+		http("FILEREQUIRED","generatURL" )("ERROR_CODE",403)("ERROR_STRING", "Authentication required.").RenderResult("../views/notFound").Response(403,"Authentication required");
+	}
+}
+
+SKYLARK(PostUpload,"upload:POST"){
+	if( !http[".USERNAME"].ToString().IsEmpty()){
+		if(StringToInt((String)http["resumableChunkNumber"]) == 1){
+			Upp::String name = (String)http["resumableFilename"];
+			if(!GetApp().IsDocumentNameExist(name)){
+				Uploading& up = GetApp().Uploadings.Create();
+				int cpt =  GetApp().Uploadings.GetCount() -1;
+				int cs = StringToInt((String)http["resumableChunkSize"]);
+				int ts = StringToInt((String)http["resumableTotalSize"]);
+				if(cs == 0){
+					http.Response(415,"Chunk received have size of 0 !");
+					return;
+				}
+				up.Username = (String)http[".USERNAME"];
+				up.FileName = (String)http["resumableFilename"];
+				up.FileSize = StringToInt((String)http["resumableTotalSize"]);
+				up.FilePath = AppendFileName(GetApp().PathToUploadFolder, up.FileName);
+				up.TotalChunkNumber =  StringToInt((String)http["resumableTotalChunks"]);
+				up.ActualChunkNumber = StringToInt((String)http["resumableChunkNumber"]);
+				time(&up.SysTimeLastRequest);
+				up.f.Open(up.FilePath);
+				if(up.f){
+					up.f <<(String)http["file"];
+					if(up.TotalChunkNumber == up.ActualChunkNumber){
+						up.f.Close();
+						Upp::String dummy ="";
+						GetApp().CreateDocument(up.FileName,up.FilePath,up.Username,up.FileSize,dummy);
+						GetApp().Uploadings.Remove(cpt);
+					}
+					http.Response(200,"Ok");
+					return;
+				}else{
+					http.Response(415,"Can't create file on server");
+					return;
+				}
+			}else{
+				http.Response(415,"Document named "+ (String)http["resumableFilename"] +" still exist on the server");
+				return;
+			}
+		}else{
+			bool trouver = false;
+			int cpt = 0;
+			for(Uploading& up : GetApp().Uploadings){
+				if(up.Username.IsEqual((String)http[".USERNAME"])){
+					trouver =true;
+					up.ActualChunkNumber = StringToInt((String)http["resumableChunkNumber"]);
+					time(&up.SysTimeLastRequest);//GetLocalTime(&up.SysTimeLastRequest);
+					up.f << (String)http["file"];
+					if(up.TotalChunkNumber == up.ActualChunkNumber){
+						up.f.Close();
+						Upp::String dummy ="";
+						GetApp().CreateDocument(up.FileName,up.FilePath,up.Username,up.FileSize,dummy);
+						GetApp().Uploadings.Remove(cpt);
+					}
+					http.Response(200,"Ok");
+					return;
+				}
+				cpt++;
+			}
+			if(!trouver){
+				http.Response(415,"This chunk is not related to any running upload");
+				return;
+			}
+		}
+	}else{
+		http.Response(405,"You must be logged");
+	}
+}
+
+SKYLARK(RessourcesHandler, "/ressources/*"){
+	if(http[0].Find(".png") != -1){
+		http.SetHeader("Cache-Control","public");
+		http.ContentType("image/png") <<  LoadFile(GetFilePath("../ressources//img/" +http[0]));
+	}else if(http[0].Find(".css")!= -1){
+		http.SetHeader("Cache-Control","public");
+		http.ContentType("text/css") <<  LoadFile(GetFilePath("../ressources//css/" +http[0]));
+	}else if(http[0].Find("fonts")!= -1){
+		http.SetHeader("Cache-Control","public");
+		http.ContentType("text/css") <<  LoadFile(GetFilePath("../ressources//fonts/" +http[0]));
+	}else if(http[0].Find(".js")!= -1){
+		http.SetHeader("Cache-Control","public");
+		http.ContentType("text/javascript") <<  LoadFile(GetFilePath("../ressources//js/" +http[0]));
+	}else{
+		http.Response(404,"File not found");
+	}
+}
+SKYLARK(Favicon, "/favicon.ico")
+{
+	http.ContentType("image/png") << LoadFile(GetFilePath("../ressources//img/favAlpha.png"));
+}
+
+
+//SOME FUNCTION ********************************************************************************
+Upp::String GetNameOfFile(Value& file){
+	if(file.GetTypeName().IsEqual("File"))
+		return ValueTo<File>(file).FileName;
+	return "unknow";
+}
+
+
+Upp::String GetFilePath(const Upp::String& ressource){
+	return FindFile(((Uploaders&)SkylarkApp::TheApp()).GetPath() + ressource).GetPath();
+}
+
+int RemoveBaliseByClass(const Upp::String& classBaliseToRemove, Upp::String& codeHtml){
+	int NbRemove = 0;
+	int finderIterator =0;
+	int place1 =0;
+	int place2 =0;
+	int finder = codeHtml.FindAfter("class=",finderIterator);
+	Upp::String toFind = "";
+	while(finder != -1){
+		finderIterator = finder;
+		if(codeHtml.Mid(finder, codeHtml.FindAfter("\"",  finder+1) - finder).Find(+"\"" + classBaliseToRemove + " ") !=-1
+			|| codeHtml.Mid(finder, codeHtml.FindAfter("\"",  finder+1) - finder).Find(+" " + classBaliseToRemove + "\"") !=-1
+			|| codeHtml.Mid(finder, codeHtml.FindAfter("\"",  finder+1) - finder).Find(+" " + classBaliseToRemove + " ") !=-1
+			|| codeHtml.Mid(finder, codeHtml.FindAfter("\"",  finder+1) - finder).Find(+"\"" + classBaliseToRemove + "\"") !=-1){
+			place1 = codeHtml.ReverseFindAfter("<",finderIterator);
+			toFind = codeHtml.Mid(place1-1,codeHtml.FindAfter(" ",place1) -place1);
+			toFind.Insert(1,"/");
+			place2 = codeHtml.FindAfter(">",codeHtml.FindAfter(toFind,finderIterator));
+			codeHtml.Remove(place1-1,place2-(place1-1));
+			NbRemove++;
+		}
+		if( finderIterator >= codeHtml.GetLength()) break;
+		else finder = codeHtml.FindAfter("class=",finderIterator);
+	}
+	return NbRemove;
+}
+
+Upp::String QtfToHTML(const Upp::String& filePath){
+	Topic topic;
+	RichText parsed;
+	
+	parsed = ::ParseQTF(LoadFile(filePath));
+	Index<String> css;
+	VectorMap<String, String> links;
+	VectorMap<String, String> labels;
+	VectorMap<String, String> escape;
+	const String outdir = ((Uploaders&)SkylarkApp::TheApp()).GetPath();
+	const String basename = MD5String(filePath);
+	
+	String content = Upp::EncodeHtml(parsed, css, links, labels, outdir, basename, Zoom(8, 40), escape, 40);
+	RemoveBaliseByClass("A",content);
+	RemoveBaliseByClass("E",content);
+	RemoveBaliseByClass("C",content);
+	RemoveBaliseByClass("td",content);
+	RemoveBaliseByClass("D",content);
+	return content;
+}
+
+int StringToInt(const Upp::String& str){
+	int n = -1;
+	try{
+		return std::stoi(str.ToStd().c_str());
+	}catch(...){
+		return -1;
+	}
+}
+
+int ProgressHandler(int reason, Http &http, int size)
+{
+	// get the upload unique identifier
+	String id = http["uploadid"];
+	String currentId = "." + id + ".currentSize";
+	String totalId = "." + id + ".totalSize";
+	// must be reentrant
+	INTERLOCKED {
+		switch(reason)
+		{
+			// got headers ?
+			case PROGRESS_HEADER:
+			{
+				http.SessionSet(currentId, 0).SessionSet(totalId, size);
+				break;
+			}
+			// reading contents ?
+			case PROGRESS_CONTENT:
+			{
+				int oldPercent = http[currentId];
+				int total = http[totalId];
+				// take care to NOT return 100% up to upload ended really
+				int percent = min(99, (int)(100.0 * size / total));
+				// avoid unnnedded session storing
+				if(oldPercent != percent)
+					http.SessionSet(currentId, percent);
+				break;
+			}
+				
+			// finished reading contents ?
+			case PROGRESS_END:
+			{
+				// signals end by resetting total size
+				http.SessionSet(totalId, 0);
+				break;
+			}
+			
+			// default, used by query handler
+			default: // PROGRESS_QUERY
+			{
+				// check if key is there --> upload started
+				int total = http[totalId];
+				if(!IsNull(total))
+				{
+					if(total)
+						// if upload not ended, return the progress %
+						return http[currentId];
+					else
+					{
+						// upload ended, nullify session variables and return 100%
+						http
+							.SessionSet(currentId, Null)
+							.SessionSet(totalId, Null)
+						;
+						return 100;
+					}
+				}
+				else
+					// upload still not started, return 0 progress
+					return 0;
+			}
+		}
+	}
+	return true;
+}

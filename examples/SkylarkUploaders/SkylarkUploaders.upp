@@ -1,0 +1,39 @@
+uses
+	Core,
+	Skylark,
+	RichText,
+	plugin/sqlite3;
+
+file
+	src\Main.cpp,
+	src\Uploaders.h,
+	src\Uploaders.cpp,
+	src\Handler.icpp,
+	views readonly separator,
+	views\base.witz,
+	views\footer.witz,
+	views\notFound.witz,
+	views\fileProvider.witz,
+	views\authentification.witz,
+	views\sources.witz,
+	js readonly separator,
+	ressources\js\resumable.min.js,
+	ressources\js\uploadJS.js,
+	ressources\js\fileProvider.js,
+	ressources\js\auth.js,
+	ressources\js\sha256.js,
+	css readonly separator,
+	ressources\css\webuogl.css,
+	ressources\css\social.css,
+	img readonly separator,
+	ressources\img\404.png,
+	ressources\img\fav.png,
+	ressources\img\nothing.png,
+	ressources\img\ulogo.png,
+	ressources\img\UOGL.png,
+	db readonly separator,
+	ressources\db\AllowedUser.sch;
+
+mainconfig
+	"" = "MT";
+

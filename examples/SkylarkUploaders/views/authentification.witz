@@ -1,0 +1,52 @@
+#include base
+
+#define ALERT
+$ALERT
+
+#define CONTENT
+<script src="ressources/sha256.js"></script>
+<script src="ressources/auth.js"></script>
+
+<div class="row">
+	<div class="col-md-2"> </div>
+	<div class="col-md-8"> 
+		<img id="notFound" src="/ressources/nothing.png" class="centerElem" alt="It's a secret to everybody.">
+	</div>
+	<div class="col-md-2"> </div>
+</div>
+<div class="row>
+	<div class="col-md-3 col-md-offset-3">
+		#ALERT
+	</div>
+</div>
+<div class="row">
+	<form action=$Auth2 onSubmit="return prepareData()" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+		<div class="row">
+			$post_identity()
+			$post_identity()
+			$post_identity()
+			<div class="col-md-1 col-md-offset-3">
+				<div class="RightText">Login:</div>
+			</div>
+			<div class="col-md-2"> 
+			      <input type="text" id="lo" name="login" >
+			</div>
+			<div class="col-md-1">
+				<div class="RightText">Password:</div>
+			</div>
+			<div class="col-md-2">
+			      <input type="password" id="pa" name="password" >
+			</div>
+		</div>
+<br>
+		<div class="row">
+			<div class="col-md-2"> </div>
+			<div class="col-md-8"> 
+				<div class="wrapper">
+					<input type="submit" class="btn btn-success" style="align:center" value="Log in">
+				</div>
+			</div>
+			<div class="col-md-2"> </div>
+		</div>
+	</form>
+</div>
