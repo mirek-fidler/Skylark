@@ -24,15 +24,18 @@ Value RawFn(const Vector<Value>& arg, const Renderer *)
 
 String GetIdentity(const Renderer *r)
 {
-	// This ugly hack expects that __identity__ is always present in r->var
 	Http *http = const_cast<Http *>(dynamic_cast<const Http *>(r));
 	if(!http)
 		throw Exc("invalid POST identity call");
-	String s = http->var[0];
-	if(s.GetCount())
-		return s;
-	s = AsString(Uuid::Create());
-	http->SessionSet0("__identity__", s);
+	
+	//New
+	for(const Upp::String& key : http->var.GetKeys()){
+		if(key.Find(IDENTITY) >= 0){
+			return http->var.Get(key).ToString();
+		}
+	}
+    auto s = AsString(Uuid::Create());
+	http->SessionSet0(IDENTITY, s);
 	http->var[0] = s;
 	return s;
 }
