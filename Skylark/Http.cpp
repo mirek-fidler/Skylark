@@ -24,6 +24,10 @@ Http::Http()
 	rsocket = NULL;
 }
 
+Http&  Http::NewIdentity(){
+	SessionSet(IDENTITY, Null); return *this;
+}
+
 void Http::ParseRequest(const char *p)
 {
 	while(*p) {

@@ -147,7 +147,7 @@ public:
 	Http&  SessionSet(const char *id, const Value& value);
 	Http&  NewSessionId();
 	
-	Http&  NewIdentity()                              { SessionSet("__identity__", Null); return *this; }
+	Http&  NewIdentity();
 
 	Http&  SetLanguage(int lang);
 	
