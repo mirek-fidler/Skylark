@@ -26,7 +26,7 @@ The generated link will be shown under the file row :
 
 
 
-![](https://i.imgur.com/fl4KJf3.png)
+![lin generated](https://i.imgur.com/fl4KJf3.png)
 
 This link is public and can be share. The max downloads value will ensure the link will no longer be available after a certain amount of downloading (here 4).
 
