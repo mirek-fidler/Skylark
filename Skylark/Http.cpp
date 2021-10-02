@@ -140,6 +140,14 @@ Http& Http::operator<<(const Value& s)
 	return *this;
 }
 
+Http& Http::SendFile(const Upp::String& filePath, int _chunkSize){
+	if(FileExists(filePath)){
+		chunkSize = _chunkSize;
+		responseStream.Open(filePath);
+	}
+	return *this;
+}
+
 Http& Http::SetCookie(const char *id, const String& value, Time expires,
                       const char *path, const char *domain, bool secure, bool httponly)
 {

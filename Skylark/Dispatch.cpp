@@ -474,10 +474,10 @@ void Http::Dispatch(TcpSocket& socket)
 			app.InternalError(*this, e);
 		}
 		Finalize();
-	}	
+	}
 }
 
-void Http::Finalize()
+void Http::Finalize(bool closeSocket)
 {
     if(rsocket) {
         SKYLARKLOG("=== Response: " << code << ' ' << code_text);
@@ -502,10 +502,15 @@ void Http::Finalize()
         }
         else {
             r <<
-                code << ' ' << code_text << "\r\n" 
-                "Date: " <<  WwwFormat(GetUtcTime()) << "\r\n" 
-                "Content-Length: " << response.GetCount() << "\r\n" 
-                "Content-Type: " << content_type << "\r\n";
+                code << ' ' << code_text << "\r\n"
+                "Date: " <<  WwwFormat(GetUtcTime()) << "\r\n";
+                if(responseStream){
+                    r << "Content-Length: " << responseStream.GetSize() << "\r\n";
+                }else{
+					r << "Content-Length: " << response.GetCount() << "\r\n";
+                }
+                r << "Content-Type: " << content_type << "\r\n";
+                
             for(int i = 0; i < headers.GetCount(); i++)
                 r << headers.GetKey(i) << ": " << headers[i] << "\r\n";
             for(int i = 0; i < cookies.GetCount(); i++)
@@ -513,7 +518,18 @@ void Http::Finalize()
         }
         r << "\r\n";
         rsocket->PutAll(r);
-        rsocket->PutAll(response);
+        if(responseStream){
+            String fileData;
+			while((fileData = responseStream.Get(chunkSize)).GetCount() > 0){
+				rsocket->PutAll(fileData);
+				fileData.Clear();
+			}
+			rsocket->PutAll("\r\n");
+			responseStream.Close();
+        }else{
+            rsocket->PutAll(response);
+        }
+        
         rsocket = NULL;
     }
 }
