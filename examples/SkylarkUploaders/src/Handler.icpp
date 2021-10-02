@@ -28,7 +28,7 @@ SKYLARK(CatchAll, "**")
 }
 SKYLARK(HomePage,"")
 {
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		http.Redirect(PrivateScreen);
 	}else{
 		http.RenderResult("../views/authentification");
@@ -36,7 +36,7 @@ SKYLARK(HomePage,"")
 }
 SKYLARK(Auth,"/secret")
 {
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		http.Redirect(PrivateScreen);
 	}else{
 		http.RenderResult("../views/authentification");
@@ -63,7 +63,7 @@ SKYLARK(LogOff,"/logOff"){
 }
 
 SKYLARK(AddUser, "adduser:POST"){
-	if(!http[".USERNAME"].ToString().IsEmpty() && !http[".RIGHT"].ToString().IsEmpty()){
+	if(!http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty() && !http[".RIGHT"].ToString().IsEmpty()){
 		String login = (String)http["login"];
 		String password = (String)http["pass"];
 		if(GetApp().bddLoaded){
@@ -82,8 +82,8 @@ SKYLARK(AddUser, "adduser:POST"){
 }
 
 SKYLARK(UpdPass, "updPass:POST"){
-	if(!http[".USERNAME"].ToString().IsEmpty()){
-		String login = (String)http[".USERNAME"];
+	if(!http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
+		String login = (String)http[MARK_SESSION_VAR("USERNAME")];
 		String oldPass = (String)http["oldpass"];
 		String newPass = (String)http["newpass"];
 		if(GetApp().bddLoaded){
@@ -107,7 +107,7 @@ SKYLARK(UpdPass, "updPass:POST"){
 }
 
 SKYLARK(PrivateScreen,"/fileProvider"){
-	if(!http[".USERNAME"].ToString().IsEmpty()){
+	if(!http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		ValueMap vm;
 		for(File& f : GetApp().AllFiles){
 			ValueMap vm2;
@@ -144,14 +144,14 @@ SKYLARK(PrivateScreen,"/fileProvider"){
 }
 
 SKYLARK(Delete,"/delete/**"){
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		if( http.GetParamCount() > 0){
 			int id = StringToInt(http[0]);
 			if( id != -1){
 				File* f = GetApp().FindFileByID(id);
 				if(f){
 					if(FileExists(f->FilePath)){
-						if(f->owner->GetLogin().IsEqual(http[".USERNAME"].ToString())){
+						if(f->owner->GetLogin().IsEqual(http[MARK_SESSION_VAR("USERNAME")].ToString())){
 							GetApp().RemoveDocument(f->id);
 							http.Redirect(PrivateScreen);
 						}else{
@@ -175,13 +175,13 @@ SKYLARK(Delete,"/delete/**"){
 }
 
 SKYLARK(DeleteURL,"/deleteURL/**"){
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		if( http.GetParamCount() > 0){
 			int id = StringToInt(http[0]);
 			if( id != -1){
 				FileURL* f = GetApp().FindFileURLByID(id);
 				if(f && f->user){
-					if(f->user->GetLogin().IsEqual(http[".USERNAME"].ToString())){
+					if(f->user->GetLogin().IsEqual(http[MARK_SESSION_VAR("USERNAME")].ToString())){
 						GetApp().RemoveURL(f->Id);
 						http.Redirect(PrivateScreen);
 					}else{
@@ -202,14 +202,14 @@ SKYLARK(DeleteURL,"/deleteURL/**"){
 }
 
 SKYLARK(Download,"/download/**"){
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		if( http.GetParamCount() > 0){
 			int id = StringToInt(http[0]);
 			if( id != -1){
 				File* f = GetApp().FindFileByID(id);
 				if(f){
 					if(FileExists(f->FilePath)){
-						http.SetHeader("content-disposition", "attachment; filename=\"" + f->FileName +"\"").ContentType("application/octet-stream") <<  LoadFile(f->FilePath);
+						http.SetHeader("content-disposition", "attachment; filename=\"" + f->FileName +"\"").ContentType("application/octet-stream").SendFile(f->FilePath);
 					}else{
 						http("FILEREQUIRED","download/" + AsString(id) )("ERROR_CODE",204)("ERROR_STRING", "File no longer exist on server.").RenderResult("../views/notFound").Response(204,"File no longer exist");
 					}
@@ -236,9 +236,7 @@ SKYLARK(DownloadURL,"/url/**"){
 				find = true;
 				if(fu.file){
 					if(FileExists(fu.file->FilePath)){
-						fu.DownloadNumber++;
-						Upp::String fileData =  LoadFile(fu.file->FilePath);
-						http.SetHeader("content-disposition", "attachment; filename=\"" + fu.file->FileName +"\"").ContentType("application/octet-stream") << fileData;
+						http.SetHeader("content-disposition", "attachment; filename=\"" + fu.file->FileName +"\"").ContentType("application/octet-stream").SendFile(fu.file->FilePath);
 						if(fu.TotalDownloadNumber != -2 && fu.TotalDownloadNumber <= fu.DownloadNumber)
 							GetApp().RemoveURL(fu.Id);
 						return;
@@ -263,12 +261,12 @@ SKYLARK(DownloadURL,"/url/**"){
 
 
 SKYLARK(CreateURL,"/generateURL"){
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		if( !http["totalDownload"].IsNull() && !http["idfile"].IsNull()){
 			int id = StringToInt(http["idfile"]);
 			int NumberOfDownload = StringToInt(http["totalDownload"]);
 			if(id != -1 && NumberOfDownload != -1){
-				if(GetApp().GenerateURL(id,http[".USERNAME"].ToString(),NumberOfDownload)){
+				if(GetApp().GenerateURL(id,http[MARK_SESSION_VAR("USERNAME")].ToString(),NumberOfDownload)){
 					http.Redirect(PrivateScreen);
 				}
 				else{
@@ -286,7 +284,7 @@ SKYLARK(CreateURL,"/generateURL"){
 }
 
 SKYLARK(PostUpload,"upload:POST"){
-	if( !http[".USERNAME"].ToString().IsEmpty()){
+	if( !http[MARK_SESSION_VAR("USERNAME")].ToString().IsEmpty()){
 		if(StringToInt((String)http["resumableChunkNumber"]) == 1){
 			Upp::String name = (String)http["resumableFilename"];
 			if(!GetApp().IsDocumentNameExist(name)){
@@ -298,7 +296,7 @@ SKYLARK(PostUpload,"upload:POST"){
 					http.Response(415,"Chunk received have size of 0 !");
 					return;
 				}
-				up.Username = (String)http[".USERNAME"];
+				up.Username = (String)http[MARK_SESSION_VAR("USERNAME")];
 				up.FileName = (String)http["resumableFilename"];
 				up.FileSize = StringToInt((String)http["resumableTotalSize"]);
 				up.FilePath = AppendFileName(GetApp().PathToUploadFolder, up.FileName);
@@ -328,7 +326,7 @@ SKYLARK(PostUpload,"upload:POST"){
 			bool trouver = false;
 			int cpt = 0;
 			for(Uploading& up : GetApp().Uploadings){
-				if(up.Username.IsEqual((String)http[".USERNAME"])){
+				if(up.Username.IsEqual((String)http[MARK_SESSION_VAR("USERNAME")])){
 					trouver =true;
 					up.ActualChunkNumber = StringToInt((String)http["resumableChunkNumber"]);
 					time(&up.SysTimeLastRequest);//GetLocalTime(&up.SysTimeLastRequest);
