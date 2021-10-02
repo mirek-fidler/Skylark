@@ -1,0 +1,293 @@
+#logo{
+	max-width:90%;
+	max-height:90%;
+	position: relative;
+	right: 23%;
+}
+#footerIMG{
+	max-width:10%;
+	max-height:10%;
+}
+
+#notFound{
+	max-width:90%;
+	max-height:90%;
+}
+.package{
+	border-style: solid;
+	border-radius: 1.0rem;
+	border-color: grey;
+}
+
+.DataList{
+	left: 5%;
+}
+
+notFound {
+	font-family: "Arial Black", Gadget, sans-serif;
+	font-size: 100px;
+}
+
+.btn-group {
+  font-size: 12px; /*or whatever size */
+}
+
+.btnUOGL {
+    display: inline-block;
+    margin-bottom: 0;
+    font-weight: 400;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    background-image: none;
+    border: 1px solid transparent;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    border-radius: 0px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.G{
+	font-weight: bold;
+}
+.M{
+	font-weight: bold;
+}
+.P{
+	/*
+		h2 equivalent
+	*/
+	font-color:
+}
+
+#footer {
+    position: fixed;
+    padding: 10px 10px 0px 10px;
+    bottom: 0;
+    width: 100%;
+    /* Height of the footer*/
+    height: 75px;
+}
+
+.centerElem{
+	position: relative;
+	left: 28%;
+}
+
+.RightText {
+    position: relative;
+    right: 0;
+    top: 6px;
+}
+
+.wrapper {
+    text-align: center;
+}
+
+/* progress bar container -- sets the maximum bar width */
+#progress_container {
+  border: solid 1px #000;
+  height: 20px;
+  width: 300px;
+  text-align:center;
+  margin:0 auto;
+}
+
+/* progress bar */
+#progress {
+  background-color: #006666;
+  color:white;
+  height: 20px;
+  width: 0px;
+}
+
+/* progress and hidden frame not showing */
+#progress_container, #hidden_iframe {
+  display: none;
+}
+
+
+.loader,
+.loader:after {
+  border-radius: 50%;
+  width: 10em;
+  height: 10em;
+}
+.loader {
+  /*margin: 10px auto;*/
+  font-size: 3px;
+  position: relative;
+  text-indent: -9999em;
+  border-top: 1.1em solid rgba(0,0,0, 0.2);
+  border-right: 1.1em solid rgba(0,0,0, 0.2);
+  border-bottom: 1.1em solid rgba(0,0,0, 0.2);
+  border-left: 1.1em solid #000000;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-animation: load8 1.1s infinite linear;
+  animation: load8 1.1s infinite linear;
+}
+@-webkit-keyframes load8 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes load8 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+
+/*
+	Class presentation paragraphe
+*/
+.F{
+	background-color:rgb(113,42,0);
+	border-color: 000000;
+	color: rgb(224,224,224);
+	text-align: center;
+	font-weight: bold;
+	font-size: 3.6rem;
+}
+
+/*
+	Contructor Detail or other paragraphe
+*/
+.L{
+	background-color:rgb(192,192,192);
+	border-color: 000000;
+}
+.M{
+	text-align: center;
+}
+
+/* Function name */
+.J{
+	color: 000000;
+	font-weight: bold;
+}
+/* Cliquable type */
+.V{
+	color: 000000;
+	text-decoration: underline;
+}
+
+/*
+	basic type int bool etc
+*/
+.P{
+	color:rgb(0,58,255);
+}
+/*Args */
+.U{
+	color:rgb(0,200,0);
+}
+/*Args2 */
+.Q{
+	color:rgb(200,0,0);
+}
+/* String */
+.Y{
+	color:rgb(0,200,0);
+}
+
+.D{
+	/*
+		h2 equivalent
+	*/
+	font-weight: 300;
+	letter-spacing: -.1rem;
+	margin-bottom: 2.0rem;
+	margin-top: 0;
+	font-size: 3.6rem;
+	line-height: 1.25;
+}
+
+
+/* Custom color */
+.button-black {
+  background-color: black;
+  border-color: black;
+}
+.button-black.button-clear,
+.button-black.button-outline {
+  background-color: transparent;
+  color: black;
+}
+.button-black.button-clear {
+  border-color: transparent;
+}
+
+.button-UppYellow {
+  background-color: rgb(230, 227, 0);
+  border-color: rgb(230, 227, 0);
+}
+.button-UppYellow.button-clear,
+.button-UppYellow.button-outline {
+	background-color: transparent;
+	color: rgb(230, 227, 0);
+}
+
+.button-UppGreen {
+  background-color: rgb(9, 230, 80);
+  border-color: rgb(9, 230, 80);
+}
+.button-UppGreen.button-clear,
+.button-UppGreen.button-outline {
+	background-color: transparent;
+	color: rgb(9, 230, 80);
+}
+
+.button-UppBlue{
+  background-color: rgb(0, 0, 255);
+  border-color: rgb(0, 0, 255);
+}
+.button-UppBlue.button-clear,
+.button-UppBlue.button-outline {
+	background-color: transparent;
+	color: rgb(0, 0, 255);
+}
+
+.button-UppRed {
+  background-color: rgb(255,0, 0);
+  border-color: rgb(255,0, 0);
+}
+.button-UppRed.button-clear,
+.button-UppRed.button-outline {
+	background-color: transparent;
+	color: rgb(255,0, 0);
+}
+
+/* Custom size */
+.button-small {
+  font-size: .8rem;
+  height: 2.8rem;
+  line-height: 2.8rem;
+  padding: 0 1.5rem;
+}
+
+.button-large {
+  font-size: 1.9rem;
+  height: 4.5rem;
+  line-height: 4.5rem;
+  padding: 0 2rem;
+}

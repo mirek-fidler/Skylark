@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title></title>
+		<meta property="og:site_name" content="Skylark Uploaders"/>
+		<meta property="og:title" content="Skylark Uploaders is a C++ application that allow you to share files arround the web !"/>
+		<meta property="og:description" content="Skylark uploaders is created with Skylark and Ultimate++ and is open source !"/>
+		<meta property="og:image" content="/ressources/fav.png">
+		<meta property="og:type" content="Skylark Uploaders:webSite"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		#include sources
+	</head>
+	<body id="body_id">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-2">#DATALIST</div>
+				<div class="col-md-10"><a href="/"><img id="logo" class="centerElem" src="/ressources/UOGL.png" alt="Logo drawed by Hugo Hamon"></a></div>
+				<div class="col-md-2">#DATALIST2</div>
+			</div>
+			<br>
+			<div class="row">
+				<div class="col-md-2">#DATALIST</div>
+				<div class="col-md-8"><div class="container-fluid">#CONTENT</div></div>
+				<div class="col-md-2">#DATALIST2</div>
+			</div>
+		</div>
+		#include footer
+	</body>
+</html>
+#define CONTENT
+#define DATALIST
+#define DATALIST2
