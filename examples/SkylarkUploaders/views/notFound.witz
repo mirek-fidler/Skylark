@@ -1,0 +1,31 @@
+#include base
+
+#define FILEREQUIRED
+#define ERROR_CODE
+#define ERROR_STRING
+
+#define CONTENT
+<div class="row">
+	<div class="col-md-3 "><img id="notFound" src="/ressources/404.png" alt="404notFound"></div>
+	<div class="col-md-9"> 
+		<div class="row">
+			<!-- here I will print a 404 -->
+			<div class="col-md-4 col-md-offset-4">
+				<notFound>$ERROR_CODE</notFound>
+			</div>
+		</div>
+		<div class="row">
+			<!-- here I will show an array with C++ compilation error  -->
+			<table class="table table-condensed">
+				<th class="active">Path</th>
+				<th class="active">Line</th>
+				<th class="active">Source</th>
+				<tr>
+				  <td class="danger">Uploaders/$FILEREQUIRED</td>
+				  <td class="danger">$ERROR_CODE</td>
+				  <td class="danger">$ERROR_STRING</td>
+				</tr>
+			</table>
+		</div>	
+	</div>
+</div>
