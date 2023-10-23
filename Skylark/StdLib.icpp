@@ -27,20 +27,13 @@ String GetIdentity(const Renderer *r)
 	Http *http = const_cast<Http *>(dynamic_cast<const Http *>(r));
 	if(!http)
 		throw Exc("invalid POST identity call");
-	
-	//New
-	bool find = false;
-	Upp::String s;
+
 	for(const Upp::String& key : http->var.GetKeys()){
 		if(key.Find("__identity__") != -1){
-			s = http->var.Get(key).ToString();
-			find = true;
-			break;
+			return http->var.Get(key).ToString();
 		}
 	}
-	if(find)
-		return s;
-	s = AsString(Uuid::Create());
+	auto s = AsString(Uuid::Create());
 	http->SessionSet0("__identity__", s);
 	http->var[0] = s;
 	return s;

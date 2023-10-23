@@ -140,12 +140,10 @@ Http& Http::operator<<(const Value& s)
 	return *this;
 }
 
-Http& Http::SendFile(const Upp::String& filePath, int _chunkSize)
+Http& Http::SendFile(const Upp::String& filepath, int chunksize)
 {
-	if(FileExists(filePath)){
-		chunkSize = _chunkSize;
-		responseStream.Open(filePath);
-	}
+	file_to_send = filepath;
+	chunk_size = chunksize;
 	return *this;
 }
 

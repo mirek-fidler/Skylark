@@ -474,64 +474,73 @@ void Http::Dispatch(TcpSocket& socket)
 			app.InternalError(*this, e);
 		}
 		Finalize();
-	}	
+	}
 }
 
 void Http::Finalize()
 {
-	if(rsocket) {
-		SKYLARKLOG("=== Response: " << code << ' ' << code_text);
-		String r;
+	if(!rsocket)
+		return;
+	
+	SKYLARKLOG("=== Response: " << code << ' ' << code_text);
+	String r;
+	FileIn stream;
 
-		// weird apache2 mod_scgi behaviour
-		if(hdr.scgi)
-			r << "Status: ";
-		else
-			r << "HTTP/1.1 ";
+	// weird apache2 mod_scgi behaviour
+	if(hdr.scgi)
+		r << "Status: ";
+	else
+		r << "HTTP/1.1 ";
 
-		if(redirect.GetCount()) {
-			// for SCGI (at least on apache 2 mod_scgi), we need protocol inside url
-			if(hdr.scgi && redirect.Find(":") < 0)
-				redirect = "http:" + redirect;
+	if(redirect.GetCount())
+	{
+		// for SCGI (at least on apache 2 mod_scgi), we need protocol inside url
+		if(hdr.scgi && redirect.Find(":") < 0)
+			redirect = "http:" + redirect;
 
-			SKYLARKLOG("Redirect to: " << redirect);
-			r << code << " Found\r\n";
-			r << "Location: " << redirect << "\r\n";
-			for(int i = 0; i < cookies.GetCount(); i++)
-				r << cookies[i];
-		}
-		else {
-			r <<
-				code << ' ' << code_text << "\r\n"
-				"Date: " <<  WwwFormat(GetUtcTime()) << "\r\n";
-				if(responseStream){
-					r << "Content-Length: " << responseStream.GetSize() << "\r\n";
-				}else{
-					r << "Content-Length: " << response.GetCount() << "\r\n";
-				}
-				r << "Content-Type: " << content_type << "\r\n";
-				
-			for(int i = 0; i < headers.GetCount(); i++)
-				r << headers.GetKey(i) << ": " << headers[i] << "\r\n";
-			for(int i = 0; i < cookies.GetCount(); i++)
-				r << cookies[i];
-		}
-		r << "\r\n";
-		rsocket->PutAll(r);
-		if(responseStream){
-			Upp::String fileData = "";
-			while((fileData = responseStream.Get(chunkSize)).GetCount() > 0){
-				rsocket->PutAll(fileData);
-				fileData = "";
-			}
-			rsocket->PutAll("\r\n");
-			responseStream.Close();
-		}else{
-			rsocket->PutAll(response);
-		}
-		
-		rsocket = NULL;
+		SKYLARKLOG("Redirect to: " << redirect);
+		r << code << " Found\r\n";
+		r << "Location: " << redirect << "\r\n";
+		for(int i = 0; i < cookies.GetCount(); i++)
+			r << cookies[i];
 	}
+	else
+	{
+		if(file_to_send.GetCount())
+		{
+			stream.Open(file_to_send);
+			file_to_send = String();
+		}
+		r <<
+			code << ' ' << code_text << "\r\n"
+			"Date: " <<  WwwFormat(GetUtcTime()) << "\r\n";
+			if(stream){
+				r << "Content-Length: " << stream.GetSize() << "\r\n";
+			}else{
+				r << "Content-Length: " << response.GetCount() << "\r\n";
+			}
+			r << "Content-Type: " << content_type << "\r\n";
+			
+		for(int i = 0; i < headers.GetCount(); i++)
+			r << headers.GetKey(i) << ": " << headers[i] << "\r\n";
+		for(int i = 0; i < cookies.GetCount(); i++)
+			r << cookies[i];
+	}
+	r << "\r\n";
+	rsocket->PutAll(r);
+	if(stream){
+		Upp::String fileData = "";
+		while((fileData = stream.Get(chunk_size)).GetCount() > 0){
+			rsocket->PutAll(fileData);
+			fileData = "";
+		}
+		rsocket->PutAll("\r\n");
+		stream.Close();
+	}else{
+		rsocket->PutAll(response);
+	}
+	
+	rsocket = NULL;
 }
 
 };
