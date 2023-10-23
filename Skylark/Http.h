@@ -80,6 +80,9 @@ class Http : public Renderer {
 	
 	VectorMap<String, String> cookies;
 	VectorMap<String, String> headers;
+
+	FileIn responseStream;
+	int chunkSize;
 	
 	void   ParseRequest(const char *s);
 	void   ReadMultiPart(const String& content);
@@ -133,6 +136,7 @@ public:
 
 	Http&  Content(const char *s, const Value& data);
 	Http&  operator<<(const Value& s);
+	Http&  SendFile(const Upp::String& filePath, int _chunkSize);
 
 	Http&  SetRawCookie(const char *id, const String& value,
 	                    Time expires = Null, const char *path = NULL,
