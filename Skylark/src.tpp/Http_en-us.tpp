@@ -1,5 +1,4 @@
 topic "Http";
-[2 $$0,0#00000000000000000000000000000000:Default]
 [i448;a25;kKO9;2 $$1,0#37138531426314131252341829483380:class]
 [l288;2 $$2,2#27521748481378242620020725143825:desc]
 [0 $$3,0#96390100711032703541132217272105:end]
@@ -9,6 +8,7 @@ topic "Http";
 [l288;i1121;b17;O9;~~~.1408;2 $$7,0#10431211400427159095818037425705:param]
 [i448;b42;O9;2 $$8,8#61672508125594000341940100500538:tparam]
 [b42;2 $$9,9#13035079074754324216151401829390:normal]
+[2 $$0,0#00000000000000000000000000000000:Default]
 [{_} 
 [ {{10000@(113.42.0) [s0;%% [*@7;4 Http]]}}&]
 [s0; &]
@@ -186,6 +186,14 @@ Returns `*this.&]
 onst]_[_^Value^ Value][@(0.0.255) `&]_[*@3 s])&]
 [s2;%% Sets the response content to [%-*@3 data] converted to text. 
 No html escaping is performed. Returns `*this.&]
+[s3;%% &]
+[s4;%% &]
+[s5;:Http`:`:operator`<`<`(const Value`&`): [_^Http^ Http][@(0.0.255) `&]_[* SendFile]([@(0.0.255) c
+onst]_[_^Value^ String][@(0.0.255) `&]_[*@3 filepath], [_ int ][*@3 chunksize])&]
+[s2;%% Send the content of [*@3 filepath ]inside the response. [*@3 chunksize 
+]control the maximum amount of data read from file between each 
+send. setting low [*@3 chunksize ]help when running skylark on 
+a low memory hardward. Returns `*this.&]
 [s3;%% &]
 [s4;%% &]
 [s5;:Http`:`:SetRawCookie`(const char`*`,const String`&`,Time`,const char`*`,const char`*`,bool`,bool`): [_^Http^ H

@@ -28,7 +28,7 @@ struct DispatchNode : Moveable<DispatchNode> { // Single node in url hierarchy t
 	
 	int (*progress)(int, Http&, int);
 	
-	enum { GET, POST };
+	enum HttpMethod{ GET, POST, OPTIONS, PUT, HEAD, CONNECT, TRACE, PATCH};
 	
 	rval_default(DispatchNode);
 
@@ -63,6 +63,27 @@ void DumpDispatchMap()
 			sub << DispatchMap[i].subnode.GetKey(j) << "->" << DispatchMap[i].subnode[j] << ", ";
 		LLOG(i << " " << (bool)DispatchMap[i].handler << ": " << sub);
 	}
+}
+
+DispatchNode::HttpMethod GetHttpMethod(const String& str)
+{
+	if(str == "CONNECT")
+		return DispatchNode::HttpMethod::CONNECT;
+	if(str == "HEAD")
+		return DispatchNode::HttpMethod::HEAD;
+	if(str == "OPTIONS")
+		return DispatchNode::HttpMethod::OPTIONS;
+	if(str == "PATCH")
+		return DispatchNode::HttpMethod::PATCH;
+	if(str == "POST")
+		return DispatchNode::HttpMethod::POST;
+	if(str == "POST_RAW")
+		return DispatchNode::HttpMethod::POST;
+	if(str == "PUT")
+		return DispatchNode::HttpMethod::PUT;
+	if(str == "TRACE")
+		return DispatchNode::HttpMethod::TRACE;
+	return DispatchNode::HttpMethod::GET;
 }
 
 String SkylarkAppendPath__(const String& path_prefix, const String& path)
@@ -112,16 +133,13 @@ void RegisterView0(void (*fn)(Http&), Callback1<Http&> cb, const char *id, Strin
 	ASSERT_(!fn || sHandlerIndex().Find((uintptr_t)fn) < 0, "duplicate view function registration " + String(id));
 	sHandlerIndex().Add((uintptr_t)fn);
 	Vector<DispatchNode>& DispatchMap = sDispatchMap();
-	int method = DispatchNode::GET;
+	int method = DispatchNode::HttpMethod::GET;
 	bool post_raw = false;
 	int q = path.Find(':');
 	if(q >= 0) {
-		if(path.Mid(q + 1) == "POST")
-			method = DispatchNode::POST;
-		if(path.Mid(q + 1) == "POST_RAW") {
-			method = DispatchNode::POST;
+		method = GetHttpMethod(path.Mid(q + 1));
+		if(method == DispatchNode::HttpMethod::POST && path.Mid(q + 1) == "POST_RAW")
 			post_raw = true;
-		}
 		path = path.Mid(0, q);
 	}
 	Vector<String> h = Split(path, '/');
@@ -237,7 +255,7 @@ struct BestDispatch { // Information about the best dispatch node for given path
 	BestDispatch(Vector<String>& arg) : arg(arg) { matched_parts = -1; matched_params = 0; post_raw = false; progress = NULL;}
 };
 
-void GetBestDispatch(int method,
+void GetBestDispatch(DispatchNode::HttpMethod method,
                      const Vector<String>& part, int ii, const DispatchNode& n, Vector<String>& arg,                     
                      BestDispatch& bd, int matched_parts, int matched_params)
 {// find the best DispatchNode for given path, best is the one with most path elements matched, if equal, more '*' used (not '**')
@@ -364,7 +382,8 @@ void Http::Dispatch(TcpSocket& socket)
 		LTIMING("Request processing");
 		request_content_type = GetHeader("content-type");
 		String rc = ToLower(request_content_type);
-		bool post = hdr.GetMethod() == "POST";
+		auto http_type = GetHttpMethod(hdr.GetMethod());
+		
 
 		String uri = hdr.GetURI();
 		int q = uri.Find('?');
@@ -400,7 +419,7 @@ void Http::Dispatch(TcpSocket& socket)
 		Vector<String> a;
 		BestDispatch bd(arg);
 		if(DispatchMap.GetCount())
-			GetBestDispatch(post ? DispatchNode::POST : DispatchNode::GET, part, 0, DispatchMap[0], a, bd, 0, 0);
+			GetBestDispatch(http_type, part, 0, DispatchMap[0], a, bd, 0, 0);
 		LDUMPC(arg);
 		
 		// we need session loaded before progress handler is called
@@ -424,7 +443,7 @@ void Http::Dispatch(TcpSocket& socket)
 				socket.WhenWait.Clear();
 				(*bd.progress)(PROGRESS_END, *this, len);
 			}
-			if(post) {
+			if(http_type == DispatchNode::HttpMethod::POST) {
 				if(rc.StartsWith("application/x-www-form-urlencoded"))
 					ParseRequest(content);
 				else
@@ -433,7 +452,7 @@ void Http::Dispatch(TcpSocket& socket)
 			}
 			response.Clear();
 			if(bd.handler) {
-				if(post && !bd.post_raw) {
+				if((http_type == DispatchNode::HttpMethod::POST) && !bd.post_raw) {
 					String id = Nvl((*this)["__post_identity__"], (*this)["__js_identity__"]);
 					if(id != (*this)[".__identity__"])
 						throw AuthExc("identity error");
@@ -519,7 +538,7 @@ void Http::Finalize()
 			}else{
 				r << "Content-Length: " << response.GetCount() << "\r\n";
 			}
-			r << "Content-Type: " << content_type << "\r\n";
+			r  << (content_type.GetLength() ? ("Content-Type: " << content_type << "\r\n") : "");
 			
 		for(int i = 0; i < headers.GetCount(); i++)
 			r << headers.GetKey(i) << ": " << headers[i] << "\r\n";

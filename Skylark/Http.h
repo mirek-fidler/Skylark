@@ -23,7 +23,7 @@ protected:
 	const One<Exe>& GetTemplate(const char *template_name);
 	friend String GetIdentity(const Renderer *r);
 
-public:	
+public:
 	Renderer& operator()(const char *id, const char *v)   { var.GetAdd(id) = v; return *this; }
 	Renderer& operator()(const char *id, const String& v) { var.GetAdd(id) = v; return *this; }
 	Renderer& operator()(const char *id, const Value& v)  { var.GetAdd(id) = v; return *this; }
@@ -136,7 +136,6 @@ public:
 	int    GetParamCount() const                       { return arg.GetCount(); }
 
 	Http&  ContentType(const char *s)                  { content_type = s; return *this; }
-
 	Http&  Content(const char *s, const Value& data);
 	Http&  operator<<(const Value& s);
 	Http&  SendFile(const Upp::String& filepath, int chunksize);
